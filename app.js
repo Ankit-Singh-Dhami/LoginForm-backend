@@ -10,12 +10,29 @@ dotenv.config();
 const app = express();
 
 app.use(express.json());
+
+import cors from "cors";
+
+const allowedOrigins = process.env.CORS_ORIGINS.split(",");
+
 app.use(
   cors({
-    origin: process.env.CORS_ORIGINS.split(","),
+    origin: function (origin, callback) {
+      // allow requests with no origin like mobile apps or curl
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.indexOf(origin) === -1) {
+        const msg = `The CORS policy for this site does not allow access from the specified Origin.`;
+        return callback(new Error(msg), false);
+      }
+      return callback(null, true);
+    },
     credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   })
 );
+
+// Handle preflight OPTIONS requests
+app.options("*", cors());
 
 // Connect to DB
 connectDB();
