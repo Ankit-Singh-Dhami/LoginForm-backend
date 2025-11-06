@@ -9,20 +9,41 @@ import { initDefaultHost } from "./controllers/hostController.js";
 dotenv.config();
 const app = express();
 
+// Middleware
 app.use(express.json());
 
-import cors from "cors";
-
+// Allowed origins
 const allowedOrigins = process.env.CORS_ORIGINS.split(",");
 
+// CORS setup
 app.use(
   cors({
     origin: function (origin, callback) {
-      // allow requests with no origin like mobile apps or curl
+      // allow requests with no origin (like Postman)
       if (!origin) return callback(null, true);
       if (allowedOrigins.indexOf(origin) === -1) {
-        const msg = `The CORS policy for this site does not allow access from the specified Origin.`;
-        return callback(new Error(msg), false);
+        return callback(
+          new Error(
+            "The CORS policy for this site does not allow access from the specified Origin."
+          ),
+          false
+        );
+      }
+      return callback(null, true);
+    },
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    credentials: true,
+  })
+);
+
+// Handle preflight OPTIONS requests globally
+app.options(
+  "*",
+  cors({
+    origin: function (origin, callback) {
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.indexOf(origin) === -1) {
+        return callback(new Error("Not allowed by CORS"), false);
       }
       return callback(null, true);
     },
@@ -30,9 +51,6 @@ app.use(
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   })
 );
-
-// Handle preflight OPTIONS requests
-app.options("*", cors());
 
 // Connect to DB
 connectDB();
@@ -46,6 +64,4 @@ app.use("/api/host", hostRoutes);
 
 // Start server
 const PORT = process.env.PORT || 8000;
-app.listen(PORT, () =>
-  console.log(`🚀 Server running on http://localhost:${PORT}`)
-);
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
